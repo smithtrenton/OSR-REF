@@ -1,0 +1,20 @@
+{
+  OSR Reflection Library
+  Maintained by: tls
+}
+
+//Data Includes
+{$I OSR-REF/Data/client_hooks.simba}
+
+//Wrapper Includes
+{$I OSR-REF/Wrappers/objmemory.simba}
+{$I OSR-REF/Wrappers/hooks.simba}
+
+//API Includes
+
+
+//Global Setup
+procedure SetupOSRRef;
+begin
+
+end;

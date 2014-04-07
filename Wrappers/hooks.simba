@@ -1,0 +1,17 @@
+{
+  File:
+    hooks.simba
+  Description:
+    Contains hook accessors and hook type
+}
+
+type
+  THook = record
+    path : String;
+    mult : Integer;
+  end;
+
+const
+  hook_Node: THook = [Node, -1];
+  hook_Node_next: THook = [Node_Next, -1];
+  hook_Node_prev: THook = [Node_prev, -1];

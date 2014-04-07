@@ -1,0 +1,13 @@
+program new;
+const regex = '(#39)\d+(#39)(;)'
+var
+i,h:integer; s:string;
+begin
+  i := OpenFile(IncludePath +
+    '\OSR-REF\Data\client_hooks.simba', false);
+  if ReadFileString(i, s, FileSize(i)) then
+  begin
+
+  end;
+  CloseFile(i);
+end.
