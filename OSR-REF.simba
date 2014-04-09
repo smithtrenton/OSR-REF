@@ -3,18 +3,23 @@
   Maintained by: tls
 }
 
-//Data Includes
-{$I OSR-REF/Data/client_hooks.simba}
-
 //Wrapper Includes
-{$I OSR-REF/Wrappers/objmemory.simba}
 {$I OSR-REF/Wrappers/hooks.simba}
+{$I OSR-REF/Wrappers/smartref.simba}
 
 //API Includes
 
 
+//Global Destructor
+procedure FreeRef;
+begin
+  freeSmartMemory(True);
+end;
+
 //Global Setup
 procedure SetupOSRRef;
 begin
-
+  smIndex := 0;
+  SetLength(smartMemory, smIndex);
+  AddOnTerminate('FreeRef');
 end;

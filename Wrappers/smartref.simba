@@ -1,0 +1,95 @@
+{
+  File:
+    objmemory.simba
+  Description:
+    Smart Overloaded functions/procedures and Memory management for SMART
+    object references.
+}
+
+type
+  TSmartObject = record
+    ref: integer;
+    hook: THook;
+  end;
+
+var
+  smartMemory: array of TSmartObject;
+  smIndex: Integer;
+
+procedure registerObject(ref: Integer; hook: THook);
+begin
+  SetLength(smartMemory, smIndex+1);
+  smartMemory[smIndex].hook := hook;
+  smartMemory[smIndex].ref := ref;
+  Inc(smIndex);
+end;
+
+procedure releaseObject(ref: Integer);forward;
+
+function SmartGetFieldObject(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := SmartGetFieldObject(SmartCurrentTarget, objref, hook.path);
+  registerObject(Result, hook);
+end;
+
+procedure SmartFreeObject(objref:integer);overload;
+begin
+  SmartFreeObject(SmartCurrentTarget, objref);
+  releaseObject(objref);
+end;
+
+function SmartIsNull(objref:integer):Boolean;overload;
+begin
+  Result := SmartIsNull(SmartCurrentTarget, objref);
+end;
+
+function SmartGetFieldBoolean(objref:integer;hook:THook):Boolean;overload;
+begin
+  Result := SmartGetFieldBoolean(SmartCurrentTarget, objref, hook.path);
+end;
+
+function SmartGetFieldInt(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := (SmartGetFieldInt(SmartCurrentTarget, objref, hook.path) * hook.mult);
+end;
+
+procedure releaseObject(ref: Integer);
+var
+  i, ind: Integer;
+begin
+  if not SmartIsNull(ref) then
+    SmartFreeObject(SmartCurrentTarget, ref);
+
+  if (smIndex = 0) then Exit;
+  for i := 0 to smIndex do
+    if (ref = smartMemory[i].ref) then
+    begin
+      ind := i;
+      break;
+    end;
+  if not((ind + 1) >= smIndex) then
+    for i := (ind + 1) to smIndex-1 do
+      smartMemory[i-1] := smartMemory[i];
+  Dec(smIndex);
+  SetLength(smartMemory, smIndex);
+end;
+
+procedure freeSmartMemory(verbose: Boolean);
+var
+  i, c: Integer;
+begin
+  c := 0;
+  if (smIndex = 0) then Exit;
+  for i := 0 to (smIndex-1) do
+  begin
+    SmartFreeObject(SmartCurrentTarget, smartMemory[i].ref);
+    if verbose then
+      Writeln('smartMemory[' + tostr(i) + ']: ' +
+        smartMemory[i].hook.name + ' freed');
+    Inc(c);
+  end;
+  if verbose then
+    srl_Warn('freeSmartMemory', 'Freed ' + tostr(c) +
+      ' object reference(s) from SMART, Script has memory leak!', warn_Warning);
+end;
+

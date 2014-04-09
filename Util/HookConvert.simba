@@ -1,13 +1,96 @@
-program new;
-const regex = '(#39)\d+(#39)(;)'
-var
-i,h:integer; s:string;
+program HookConvert;
+
+const
+  heading = '{' +#10+ '  File:' +#10+ '    hooks.simba' +#10+
+    '  Description:' +#10+ '    Contains hook accessors and hook type'+
+    #10+'}'
+    + #10+#10+ 'type' +#10+ '  THook = record' +#10+ '    path, name : String;'
+    + #10+ '    mult : Integer;' +#10+ '  end;' +#10+#10+'const';
+
+type
+  THook = record
+    path, name : String;
+    mult : Integer;
+  end;
+  THookArray = array of THook;
+
+procedure output(f:integer; hook: THook);
 begin
-  i := OpenFile(IncludePath +
-    '\OSR-REF\Data\client_hooks.simba', false);
+  if not WriteFileString(f, #10 + '  hook_' + hook.name + ': THook = ['
+    + hook.path + ', ' +#39+hook.name+#39+ ', ' + tostr(hook.mult) + '];') then
+  begin
+    Writeln('Failed to write: ' + hook.name);
+  end;
+end;
+
+var
+  i, o, h, p, fc, mc, lc: integer;
+  s: string;
+  a, b: TStringArray;
+  f, m: THookArray;
+  temp: THook;
+  NULL_HOOK : THook = ['','',1];
+begin
+  i := OpenFile(IncludePath + '\OSR-REF\Data\client_hooks.simba', false);
+  o := RewriteFile(IncludePath + '\OSR-REF\Wrappers\hooks.simba', false);
+  fc := 0;
+  mc := 0;
+  SetLength(f, 0);
+  SetLength(m, 0);
+  if not WriteFileString(o, heading) then
+  begin
+    WriteLn('Failed to write heading of new hooks.simba');
+    exit;
+  end;
   if ReadFileString(i, s, FileSize(i)) then
   begin
+    a := Explode(';', s);
+    if (Length(a) < 2) then
+    begin
+      WriteLn('client_hooks.simba Corrupted');
+      Exit;
+    end;
 
+    for h := 1 to High(a) do
+    begin
+      a[h] := ReplaceRegExpr('({).*(})', trim(a[h]), '', true);
+      a[h] := ReplaceRegExpr('( )+', trim(a[h]), '', true);
+      if (Length(a[h]) < 1) then Continue;
+      temp := NULL_HOOK;
+      //writeln(a[h]);
+      if (Pos('Multiplier', a[h]) > 0) then
+      begin
+        temp.name := ReplaceRegExpr('(_Multiplier).*', a[h] , '', true);
+        temp.mult := StrToInt(ReplaceRegExpr('.*(lier=)', a[h], '', true));
+        SetLength(m, length(m)+1);
+        m[mc] := temp;
+        inc(mc);
+      end else
+      begin
+        b := Explode('=', a[h]);
+        temp.name := b[0];
+        temp.path := b[1];
+        SetLength(f, length(f)+1);
+        f[fc] := temp;
+        inc(fc);
+      end;
+    end;
   end;
+  writeln('mults: '+tostr(mc));
+  writeln('fields: '+tostr(fc));
+  for h := 0 to (fc-1) do
+  begin
+    for p := 0 to (mc-1) do
+    begin
+      if (m[p].name = f[h].name) then
+      begin
+        f[h].mult := m[p].mult;
+        inc(lc);
+      end;
+    end;
+    output(o, f[h]);
+  end;
+  writeln('fields with mults: '+tostr(lc));
   CloseFile(i);
+  CloseFile(o);
 end.
