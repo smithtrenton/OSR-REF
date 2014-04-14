@@ -6,7 +6,4 @@ program CompileOSR_REF;
 begin
   SetupSRL;
   SetupOSRRef;
-  repeat
-    wait(1000);
-  until false;
 end.
