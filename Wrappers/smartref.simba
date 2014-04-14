@@ -6,9 +6,12 @@
     object references.
 }
 
+{********Section of object management, including smart object functions********}
+
 type
   TSmartObject = record
     ref: integer;
+    name: String;
     hook: THook;
   end;
 
@@ -16,20 +19,72 @@ var
   smartMemory: array of TSmartObject;
   smIndex: Integer;
 
-procedure registerObject(ref: Integer; hook: THook);
+procedure registerObject(ref: Integer; name: String; hook: THook);
 begin
   SetLength(smartMemory, smIndex+1);
   smartMemory[smIndex].hook := hook;
   smartMemory[smIndex].ref := ref;
+  smartMemory[smIndex].name := name;
   Inc(smIndex);
+  if OSRREF_DEBUG then
+    if (smartMemory[smIndex-1].name = '') then
+        Writeln('  smartMemory[' + tostr(smIndex-1) + ']: ' +
+          smartMemory[smIndex-1].hook.name + ' added')
+      else
+        Writeln('  smartMemory[' + tostr(smIndex-1) + ']: ' +
+          smartMemory[smIndex-1].name + '/' + smartMemory[smIndex-1].hook.name +
+          ' added');
+end;
+
+procedure registerObject(ref: Integer; hook: THook); overload;
+begin
+  registerObject(ref, '', hook);
 end;
 
 procedure releaseObject(ref: Integer);forward;
 
-function SmartGetFieldObject(objref:integer;hook:THook):Integer;overload;
+function SmartGetFieldObject(objref:integer;hook:THook;name:String):Integer;overload;
 begin
   Result := SmartGetFieldObject(SmartCurrentTarget, objref, hook.path);
-  registerObject(Result, hook);
+  registerObject(Result, name, hook);
+end;
+
+function SmartGetFieldArray3DObject(objref:integer;hook:THook;x,y,z:integer;name:String):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DObject(SmartCurrentTarget, objref, hook.path, x, y, z);
+  registerObject(Result, name, hook);
+end;
+
+function SmartGetFieldArray2DObject(objref:integer;hook:THook;x,y:integer;name:String):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DObject(SmartCurrentTarget, objref, hook.path, x, y);
+  registerObject(Result, name, hook);
+end;
+
+function SmartGetFieldArrayObject(objref:integer;hook:THook;index:integer;name:String):Integer;overload;
+begin
+  Result := SmartGetFieldArrayObject(SmartCurrentTarget, objref, hook.path, index);
+  registerObject(Result, name, hook);
+end;
+
+function SmartGetFieldObject(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := SmartGetFieldObject(objref, hook, '');
+end;
+
+function SmartGetFieldArray3DObject(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DObject(objref, hook, x, y, z, '');
+end;
+
+function SmartGetFieldArray2DObject(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DObject(objref, hook, x, y, '');
+end;
+
+function SmartGetFieldArrayObject(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayObject(objref, hook, index, '');
 end;
 
 procedure SmartFreeObject(objref:integer);overload;
@@ -43,9 +98,116 @@ begin
   Result := SmartIsNull(SmartCurrentTarget, objref);
 end;
 
+function SmartIsEqual(obja, objb:integer):Boolean;overload;
+begin
+  Result := SmartIsEqual(SmartCurrentTarget, obja, objb);
+end;
+
+function loadedSmartObjects: Integer;
+begin
+  Result := smIndex;
+end;
+
+procedure freeObject(index: Integer);
+var
+  i, ind: Integer;
+begin
+  if (smIndex <= 0) then Exit;
+  if not SmartIsNull(smartMemory[index].ref) then
+    SmartFreeObject(SmartCurrentTarget, smartMemory[index].ref);
+
+  if OSRREF_DEBUG then
+      if (smartMemory[index].name = '') then
+        Writeln('  smartMemory[' + tostr(index) + ']: ' +
+          smartMemory[index].hook.name + ' freed')
+      else
+        Writeln('  smartMemory[' + tostr(index) + ']: ' +
+          smartMemory[index].name + '/' + smartMemory[index].hook.name +
+          ' freed');
+
+  if (index < smIndex) then
+    for i := (index) to smIndex-2 do
+      smartMemory[i] := smartMemory[i+1];
+  Dec(smIndex);
+  SetLength(smartMemory, smIndex);
+end;
+
+procedure releaseObject(ref: Integer);
+var
+  i, ind: Integer;
+begin
+  ind := -1;
+  if (smIndex <= 0) then Exit;
+  for i := 0 to smIndex do
+    if (ref = smartMemory[i].ref) then
+    begin
+      ind := i;
+      break;
+    end;
+  if (ind >= 0) then
+    freeObject(ind)
+  else
+    srl_Warn('releaseObject', 'smartObject not found by ref!', warn_Warning);
+end;
+
+procedure releaseObject(name: String);overload;
+var
+  i, ind: Integer;
+begin
+  ind := -1;
+  if (smIndex <= 0) then Exit;
+  for i := 0 to smIndex do
+    if (name = smartMemory[i].name) then
+    begin
+      ind := i;
+      break;
+    end;
+  if (ind >= 0) then
+    freeObject(ind)
+  else
+    srl_Warn('releaseObject', 'smartObject not found by name!', warn_Warning);
+end;
+
+function freeSmartMemory: integer;
+var
+  i, c: Integer;
+begin
+  c := 0;
+  if (smIndex = 0) then Exit;
+  for i := (smIndex-1) downto (0) do
+  begin
+    Inc(c);
+    freeObject(i);
+  end;
+  smIndex := 0;
+  SetLength(smartMemory, smIndex);
+  if OSRREF_DEBUG then
+    srl_Warn('freeSmartMemory', 'Freed ' + tostr(c) +
+      ' object reference(s) from SMART, Script has memory leak!', warn_Warning);
+  Result := c;
+end;
+
+
+{***************Section of non-object smart overloaded functions***************}
+
+function SmartIsPathValid(objref:integer;hook:THook):Boolean;overload;
+begin
+  Result := SmartIsPathValid(SmartCurrentTarget, objref, hook.path);
+end;
+
 function SmartGetFieldBoolean(objref:integer;hook:THook):Boolean;overload;
 begin
   Result := SmartGetFieldBoolean(SmartCurrentTarget, objref, hook.path);
+end;
+
+function SmartGetFieldLongH(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := SmartGetFieldLongH(SmartCurrentTarget, objref, hook.path);
+end;
+
+function SmartGetFieldLongL(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := SmartGetFieldLongL(SmartCurrentTarget, objref, hook.path);
 end;
 
 function SmartGetFieldInt(objref:integer;hook:THook):Integer;overload;
@@ -53,43 +215,177 @@ begin
   Result := (SmartGetFieldInt(SmartCurrentTarget, objref, hook.path) * hook.mult);
 end;
 
-procedure releaseObject(ref: Integer);
-var
-  i, ind: Integer;
+function SmartGetFieldShort(objref:integer;hook:THook):Integer;overload;
 begin
-  if not SmartIsNull(ref) then
-    SmartFreeObject(SmartCurrentTarget, ref);
-
-  if (smIndex = 0) then Exit;
-  for i := 0 to smIndex do
-    if (ref = smartMemory[i].ref) then
-    begin
-      ind := i;
-      break;
-    end;
-  if not((ind + 1) >= smIndex) then
-    for i := (ind + 1) to smIndex-1 do
-      smartMemory[i-1] := smartMemory[i];
-  Dec(smIndex);
-  SetLength(smartMemory, smIndex);
+  Result := SmartGetFieldShort(SmartCurrentTarget, objref, hook.path);
 end;
 
-procedure freeSmartMemory(verbose: Boolean);
-var
-  i, c: Integer;
+function SmartGetFieldFloat(objref:integer;hook:THook):Extended;overload;
 begin
-  c := 0;
-  if (smIndex = 0) then Exit;
-  for i := 0 to (smIndex-1) do
-  begin
-    SmartFreeObject(SmartCurrentTarget, smartMemory[i].ref);
-    if verbose then
-      Writeln('smartMemory[' + tostr(i) + ']: ' +
-        smartMemory[i].hook.name + ' freed');
-    Inc(c);
-  end;
-  if verbose then
-    srl_Warn('freeSmartMemory', 'Freed ' + tostr(c) +
-      ' object reference(s) from SMART, Script has memory leak!', warn_Warning);
+  Result := SmartGetFieldFloat(SmartCurrentTarget, objref, hook.path);
 end;
 
+function SmartGetFieldDouble(objref:integer;hook:THook):Extended;overload;
+begin
+  Result := SmartGetFieldDouble(SmartCurrentTarget, objref, hook.path);
+end;
+
+function SmartGetFieldByte(objref:integer;hook:THook):Integer;overload;
+begin
+  Result := SmartGetFieldByte(SmartCurrentTarget, objref, hook.path);
+end;
+
+function SmartGetFieldArray3DByte(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DByte(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DChar(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DChar(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DShort(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DShort(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DInt(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DInt(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DFloat(objref:integer;hook:THook;x,y,z:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArray3DFloat(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DDouble(objref:integer;hook:THook;x,y,z:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArray3DDouble(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DBoolean(objref:integer;hook:THook;x,y,z:integer):Boolean;overload;
+begin
+  Result := SmartGetFieldArray3DBoolean(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DLongH(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DLongH(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray3DLongL(objref:integer;hook:THook;x,y,z:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray3DLongL(SmartCurrentTarget, objref, hook.path, x, y, z);
+end;
+
+function SmartGetFieldArray2DByte(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DByte(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DChar(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DChar(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DShort(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DShort(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DInt(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DInt(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DFloat(objref:integer;hook:THook;x,y:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArray2DFloat(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DDouble(objref:integer;hook:THook;x,y:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArray2DDouble(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DBoolean(objref:integer;hook:THook;x,y:integer):Boolean;overload;
+begin
+  Result := SmartGetFieldArray2DBoolean(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DLongH(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DLongH(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArray2DLongL(objref:integer;hook:THook;x,y:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArray2DLongL(SmartCurrentTarget, objref, hook.path, x, y);
+end;
+
+function SmartGetFieldArrayByte(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayByte(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayChar(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayChar(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayShort(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayShort(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayInt(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayInt(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayFloat(objref:integer;hook:THook;index:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArrayFloat(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayDouble(objref:integer;hook:THook;index:integer):Extended;overload;
+begin
+  Result := SmartGetFieldArrayDouble(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayBoolean(objref:integer;hook:THook;index:integer):Boolean;
+begin
+  Result := SmartGetFieldArrayBool(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayLongH(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayLongH(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArrayLongL(objref:integer;hook:THook;index:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayLongL(SmartCurrentTarget, objref, hook.path, index);
+end;
+
+function SmartGetFieldArraySize(objref:integer;hook:THook;dim:integer):Integer;overload;
+begin
+  Result := SmartGetFieldArrayLongL(SmartCurrentTarget, objref, hook.path, dim);
+end;
+
+function SmartStringFromString(jstr:integer;str:String):integer;overload;
+begin
+  Result := SmartStringFromString(SmartCurrentTarget, jstr, str);
+end;
+
+function SmartStringFromBytes(bytes:integer;str:String):integer;overload;
+begin
+  Result := SmartStringFromBytes(SmartCurrentTarget, bytes, str);
+end;
+
+function SmartStringFromChars(chars:integer;str:String):integer;overload;
+begin
+  Result := SmartStringFromChars(SmartCurrentTarget, chars, str);
+end;

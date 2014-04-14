@@ -1,0 +1,12 @@
+program CompileOSR_REF;
+{$DEFINE SMART8}
+{$I SRL-OSR/SRL.simba}
+{$I OSR-REF/OSR-REF.simba}
+
+begin
+  SetupSRL;
+  SetupOSRRef;
+  repeat
+    wait(1000);
+  until false;
+end.

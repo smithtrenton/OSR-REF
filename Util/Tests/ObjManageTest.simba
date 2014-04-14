@@ -1,0 +1,69 @@
+program CompileOSR_REF;
+{$DEFINE SMART8}
+{$DEFINE OSRREF_DEBUG}
+{$I SRL-OSR/SRL.simba}
+{$I OSR-REF/OSR-REF.simba}
+
+var
+  i: integer;
+
+begin
+  SetupSRL;
+  SetupOSRRef;
+  i := 0;
+  repeat
+    SmartGetFieldObject(0, hook_client_player, 'player'+tostr(i));
+    wait(100);
+    inc(i);
+  until (i >= 10);
+  writeln(loadedSmartObjects);
+  freeObject(0);
+  writeln(loadedSmartObjects);
+  releaseObject('player2');
+  writeln(loadedSmartObjects);
+  releaseObject('player2');
+  writeln(loadedSmartObjects);
+  releaseObject(9);
+  writeln(loadedSmartObjects);
+end.
+
+{*******************************Expected Output********************************}
+{
+SRL Compiled in 0 msec
+Attempting to pair to a smart client..
+Found 1 free client(s), attempting to pair to one...
+Set SMART[4532] as Simba's target
+Succesfully paired to a existing client, SMART[4532]
+  smartMemory[0]: player0/client_player added
+  smartMemory[1]: player1/client_player added
+  smartMemory[2]: player2/client_player added
+  smartMemory[3]: player3/client_player added
+  smartMemory[4]: player4/client_player added
+  smartMemory[5]: player5/client_player added
+  smartMemory[6]: player6/client_player added
+  smartMemory[7]: player7/client_player added
+  smartMemory[8]: player8/client_player added
+  smartMemory[9]: player9/client_player added
+10
+  smartMemory[0]: player0/client_player freed
+9
+  smartMemory[1]: player2/client_player freed
+8
+** Warning in releaseObject: smartObject not found by name! **
+8
+** Warning in releaseObject: smartObject not found by ref! **
+8
+Succesfully freed SMART[4532]
+  smartMemory[7]: player9/client_player freed
+  smartMemory[6]: player8/client_player freed
+  smartMemory[5]: player7/client_player freed
+  smartMemory[4]: player6/client_player freed
+  smartMemory[3]: player5/client_player freed
+  smartMemory[2]: player4/client_player freed
+  smartMemory[1]: player3/client_player freed
+  smartMemory[0]: player1/client_player freed
+** Warning in freeSmartMemory: Freed 8 object reference(s) from SMART, Script has memory leak! **
+** Warning in FreeOSRRef: Freed 8 object reference(s) from SMART, Script has memory leak! **
+Successfully freed OSR-REF
+Successfully executed.
+}

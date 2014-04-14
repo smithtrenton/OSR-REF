@@ -3,17 +3,30 @@
   Maintained by: tls
 }
 
+//Global Debug Setup
+const
+{$IFDEF OSRREF_DEBUG}
+  OSRREF_DEBUG = True;
+{$ELSE}
+  OSRREF_DEBUG = False;
+{$ENDIF}
+
 //Wrapper Includes
 {$I OSR-REF/Wrappers/hooks.simba}
 {$I OSR-REF/Wrappers/smartref.simba}
 
 //API Includes
 
-
 //Global Destructor
-procedure FreeRef;
+procedure FreeOSRRef;
+var
+  OSRREF_leaked: Integer;
 begin
-  freeSmartMemory(True);
+  OSRREF_leaked := freeSmartMemory;
+  if (OSRREF_leaked > 0) then
+    srl_Warn('FreeOSRRef', 'Freed ' + tostr(OSRREF_leaked) +
+      ' object reference(s) from SMART, Script has memory leak!', warn_Warning);
+  Writeln('Successfully freed OSR-REF');
 end;
 
 //Global Setup
@@ -21,5 +34,5 @@ procedure SetupOSRRef;
 begin
   smIndex := 0;
   SetLength(smartMemory, smIndex);
-  AddOnTerminate('FreeRef');
+  AddOnTerminate('FreeOSRRef');
 end;
