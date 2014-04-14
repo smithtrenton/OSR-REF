@@ -16,15 +16,17 @@ begin
     wait(100);
     inc(i);
   until (i >= 10);
-  writeln(loadedSmartObjects);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
   freeObject(0);
-  writeln(loadedSmartObjects);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
+  freeObject(9);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
   releaseObject('player2');
-  writeln(loadedSmartObjects);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
   releaseObject('player2');
-  writeln(loadedSmartObjects);
-  releaseObject(9);
-  writeln(loadedSmartObjects);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
+  releaseObject(9001);
+  writeln('loadedSmartObjects: ' + tostr(loadedSmartObjects));
 end.
 
 {*******************************Expected Output********************************}
@@ -49,9 +51,9 @@ Succesfully paired to a existing client, SMART[4532]
 9
   smartMemory[1]: player2/client_player freed
 8
-** Warning in releaseObject: smartObject not found by name! **
+** Warning in releaseObject: smartObject not found by name: player2! **
 8
-** Warning in releaseObject: smartObject not found by ref! **
+** Warning in releaseObject: smartObject not found by ref: 9! **
 8
 Succesfully freed SMART[4532]
   smartMemory[7]: player9/client_player freed

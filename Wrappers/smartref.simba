@@ -16,24 +16,24 @@ type
   end;
 
 var
-  smartMemory: array of TSmartObject;
-  smIndex: Integer;
+  smartObjects: array of TSmartObject;
+  soIndex: Integer;
 
 procedure registerObject(ref: Integer; name: String; hook: THook);
 begin
-  SetLength(smartMemory, smIndex+1);
-  smartMemory[smIndex].hook := hook;
-  smartMemory[smIndex].ref := ref;
-  smartMemory[smIndex].name := name;
-  Inc(smIndex);
+  SetLength(smartObjects, soIndex+1);
+  smartObjects[soIndex].hook := hook;
+  smartObjects[soIndex].ref := ref;
+  smartObjects[soIndex].name := name;
+  Inc(soIndex);
   if OSRREF_DEBUG then
-    if (smartMemory[smIndex-1].name = '') then
-        Writeln('  smartMemory[' + tostr(smIndex-1) + ']: ' +
-          smartMemory[smIndex-1].hook.name + ' added')
+    if (smartObjects[soIndex-1].name = '') then
+        Writeln('** smartObjects[' + tostr(soIndex-1) + ']: ' +
+          smartObjects[soIndex-1].hook.name + ' added **')
       else
-        Writeln('  smartMemory[' + tostr(smIndex-1) + ']: ' +
-          smartMemory[smIndex-1].name + '/' + smartMemory[smIndex-1].hook.name +
-          ' added');
+        Writeln('** smartObjects[' + tostr(soIndex-1) + ']: ' +
+          smartObjects[soIndex-1].name + '/' + smartObjects[soIndex-1].hook.name +
+          ' added **');
 end;
 
 procedure registerObject(ref: Integer; hook: THook); overload;
@@ -105,31 +105,36 @@ end;
 
 function loadedSmartObjects: Integer;
 begin
-  Result := smIndex;
+  Result := soIndex;
 end;
 
 procedure freeObject(index: Integer);
 var
   i, ind: Integer;
 begin
-  if (smIndex <= 0) then Exit;
-  if not SmartIsNull(smartMemory[index].ref) then
-    SmartFreeObject(SmartCurrentTarget, smartMemory[index].ref);
+  if (soIndex <= 0) then Exit;
+  if ((index >= soIndex) or (index < 0)) then
+  begin
+    srl_Warn('freeObject', 'smartObjects[' + tostr(index) + '] is out of bounds!', warn_Warning);
+    Exit;
+  end;
+
+  if not SmartIsNull(smartObjects[index].ref) then
+    SmartFreeObject(SmartCurrentTarget, smartObjects[index].ref);
 
   if OSRREF_DEBUG then
-      if (smartMemory[index].name = '') then
-        Writeln('  smartMemory[' + tostr(index) + ']: ' +
-          smartMemory[index].hook.name + ' freed')
+      if (smartObjects[index].name = '') then
+        Writeln('** smartObjects[' + tostr(index) + ']: ' +
+          smartObjects[index].hook.name + ' freed **')
       else
-        Writeln('  smartMemory[' + tostr(index) + ']: ' +
-          smartMemory[index].name + '/' + smartMemory[index].hook.name +
-          ' freed');
+        Writeln('** smartObjects[' + tostr(index) + ']: ' +
+          smartObjects[index].name + '/' + smartObjects[index].hook.name +
+          ' freed **');
 
-  if (index < smIndex) then
-    for i := (index) to smIndex-2 do
-      smartMemory[i] := smartMemory[i+1];
-  Dec(smIndex);
-  SetLength(smartMemory, smIndex);
+  for i := (index) to soIndex-2 do
+    smartObjects[i] := smartObjects[i+1];
+  Dec(soIndex);
+  SetLength(smartObjects, soIndex);
 end;
 
 procedure releaseObject(ref: Integer);
@@ -137,9 +142,9 @@ var
   i, ind: Integer;
 begin
   ind := -1;
-  if (smIndex <= 0) then Exit;
-  for i := 0 to smIndex do
-    if (ref = smartMemory[i].ref) then
+  if (soIndex <= 0) then Exit;
+  for i := 0 to soIndex do
+    if (ref = smartObjects[i].ref) then
     begin
       ind := i;
       break;
@@ -147,7 +152,7 @@ begin
   if (ind >= 0) then
     freeObject(ind)
   else
-    srl_Warn('releaseObject', 'smartObject not found by ref!', warn_Warning);
+    srl_Warn('releaseObject', 'smartObject not found by ref: ' + tostr(ref) + '!', warn_Warning);
 end;
 
 procedure releaseObject(name: String);overload;
@@ -155,9 +160,9 @@ var
   i, ind: Integer;
 begin
   ind := -1;
-  if (smIndex <= 0) then Exit;
-  for i := 0 to smIndex do
-    if (name = smartMemory[i].name) then
+  if (soIndex <= 0) then Exit;
+  for i := 0 to soIndex do
+    if (name = smartObjects[i].name) then
     begin
       ind := i;
       break;
@@ -165,22 +170,22 @@ begin
   if (ind >= 0) then
     freeObject(ind)
   else
-    srl_Warn('releaseObject', 'smartObject not found by name!', warn_Warning);
+    srl_Warn('releaseObject', 'smartObject not found by name: ' + name + '!', warn_Warning);
 end;
 
-function freeSmartMemory: integer;
+function freeSmartObjects: integer;
 var
   i, c: Integer;
 begin
   c := 0;
-  if (smIndex = 0) then Exit;
-  for i := (smIndex-1) downto (0) do
+  if (soIndex = 0) then Exit;
+  for i := (soIndex-1) downto (0) do
   begin
     Inc(c);
     freeObject(i);
   end;
-  smIndex := 0;
-  SetLength(smartMemory, smIndex);
+  soIndex := 0;
+  SetLength(smartObjects, soIndex);
   if OSRREF_DEBUG then
     srl_Warn('freeSmartMemory', 'Freed ' + tostr(c) +
       ' object reference(s) from SMART, Script has memory leak!', warn_Warning);

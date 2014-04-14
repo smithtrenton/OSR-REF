@@ -22,7 +22,7 @@ procedure FreeOSRRef;
 var
   OSRREF_leaked: Integer;
 begin
-  OSRREF_leaked := freeSmartMemory;
+  OSRREF_leaked := freeSmartObjects;
   if (OSRREF_leaked > 0) then
     srl_Warn('FreeOSRRef', 'Freed ' + tostr(OSRREF_leaked) +
       ' object reference(s) from SMART, Script has memory leak!', warn_Warning);
@@ -32,7 +32,7 @@ end;
 //Global Setup
 procedure SetupOSRRef;
 begin
-  smIndex := 0;
-  SetLength(smartMemory, smIndex);
+  soIndex := 0;
+  SetLength(smartObjects, soIndex);
   AddOnTerminate('FreeOSRRef');
 end;
