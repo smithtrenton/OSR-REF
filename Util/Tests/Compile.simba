@@ -7,3 +7,15 @@ begin
   SetupSRL;
   SetupOSRRef;
 end.
+
+{*******************************Expected Output********************************}
+{
+SRL Compiled in 0 msec
+Attempting to pair to a smart client..
+Found 1 free client(s), attempting to pair to one...
+Set SMART[4532] as Simba's target
+Succesfully paired to a existing client, SMART[4532]
+Succesfully freed SMART[4532]
+Successfully freed OSR-REF
+Successfully executed.
+}
