@@ -1,0 +1,32 @@
+program TileToScreenTest;
+{$DEFINE SMART8}
+{$DEFINE OSRREF_DEBUG}
+{$I SRL-OSR\SRL.simba}
+{$I SRL-OSR\SRL\Misc\SmartGraphics.simba}
+{$I OSR-REF\OSR-REF.simba}
+
+var
+  me: TMe;
+  t,a: TPoint;
+  tile, tileb: TTile;
+  b: TPointArray;
+  i,h: Integer;
+
+begin
+  SetupSRL;
+  SetupOSRRef;
+  SMART_SetupDebug();
+  me.Create(SmartGetFieldObject(0, hook_Client_player, 'me'), 0);
+  tile := me.getTile;
+  me.Free;
+  for i := -10 to 10 do
+    for h := -10 to 10 do
+    begin
+      tileb.create(tile.x+i,tile.y+h);
+      b := tileb.getBounds;
+      FilterPointsBox(b, MSX1, MSY1, MSX2, MSY2);
+      SMART_DrawPolygons(False, [b], clRed);
+      SMART_DrawCircle(False, t, 2, false, clWhite);
+    end;
+  SMART_DrawPolygons(False, [tile.getBounds], clGreen);
+end.
