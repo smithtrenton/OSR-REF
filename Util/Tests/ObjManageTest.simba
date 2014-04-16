@@ -1,4 +1,4 @@
-program CompileOSR_REF;
+program ObjManageTest;
 {$DEFINE SMART8}
 {$DEFINE OSRREF_DEBUG}
 {$I SRL-OSR/SRL.simba}

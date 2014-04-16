@@ -377,7 +377,7 @@ end;
 
 function SmartGetFieldArraySize(objref:integer;hook:THook;dim:integer):Integer;overload;
 begin
-  Result := SmartGetFieldArrayLongL(SmartCurrentTarget, objref, hook.path, dim);
+  Result := SmartGetFieldArraySize(SmartCurrentTarget, objref, hook.path, dim);
 end;
 
 function SmartStringFromString(jstr:integer;str:String):integer;overload;
@@ -393,4 +393,72 @@ end;
 function SmartStringFromChars(chars:integer;str:String):integer;overload;
 begin
   Result := SmartStringFromChars(SmartCurrentTarget, chars, str);
+end;
+
+function SmartGetFieldString(objref:integer;hook:THook):String;
+var
+  obj: Integer;
+begin
+  obj := SmartGetFieldObject(objref, hook);
+  SetLength(Result, 512);
+  SetLength(Result, SmartStringFromString(obj, result));
+  Result := Trim(Replace(Replace(Result, #194, ''), #160, #32));
+  releaseObject(obj);
+end;
+
+function SmartGetFieldArrayString(objref:integer;hook:THook;index:integer):String;
+var
+  obj: Integer;
+begin
+  obj := SmartGetFieldArrayObject(objref, hook, index);
+  SetLength(Result, 512);
+  SetLength(Result, SmartStringFromString(obj, result));
+  Result := Replace(Replace(Result, #194, ''), #160, #32);
+  releaseObject(obj);
+end;
+
+function SmartGetFieldArray2DString(objref:integer;hook:THook;x,y:integer):String;
+var
+  obj: Integer;
+begin
+  obj := SmartGetFieldArray2DObject(objref, hook, x, y);
+  SetLength(Result, 512);
+  SetLength(Result, SmartStringFromString(obj, result));
+  Result := Replace(Replace(Result, #194, ''), #160, #32);
+  releaseObject(obj);
+end;
+
+function SmartGetFieldArray3DString(objref:integer;hook:THook;x,y,z:integer):String;
+var
+  obj: Integer;
+begin
+  obj := SmartGetFieldArray3DObject(objref, hook, x, y, z);
+  SetLength(Result, 512);
+  SetLength(Result, SmartStringFromString(obj, result));
+  Result := Replace(Replace(Result, #194, ''), #160, #32);
+  releaseObject(obj);
+end;
+
+function SmartGetFieldStringArray(objref:integer;hook:THook): TStringArray;
+var
+  hi, i: Integer;
+begin
+  SetLength(Result, SmartGetFieldArraySize(objref, hook, 0));
+  hi := High(Result);
+  for i := 0 to hi do
+  begin
+    Result[i] := SmartGetFieldArrayString(objref, hook, i);
+  end;
+end;
+
+function SmartGetFieldIntArray(objref:integer;hook:THook): TIntegerArray;
+var
+  hi, i: Integer;
+begin
+  SetLength(Result, SmartGetFieldArraySize(objref, hook, 0));
+  hi := High(Result);
+  for i := 0 to hi do
+  begin
+    Result[i] := SmartGetFieldArrayInt(objref, hook, i);
+  end;
 end;

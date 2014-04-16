@@ -1,0 +1,54 @@
+{
+  File:
+    player.simba
+  Description:
+    Contains player record and accessors
+}
+
+type
+  TPlayer = record(TActor)
+    index: Integer;
+  end;
+  TMe = type TPlayer;
+
+procedure TPlayer.Create(r, i: Integer);
+begin
+  ref := r;
+  index := i;
+end;
+
+function TPlayer.getIndex: Integer;
+begin
+  Result := index;
+end;
+
+function TPlayer.getDefinition: Integer;
+begin
+  Result := SmartGetFieldObject(ref, hook_Player_definition);
+end;
+
+function TPlayer.getName: String;
+begin
+  Result := SmartGetFieldString(ref, hook_Player_name);
+end;
+
+function TPlayer.getLevel: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Player_level);
+end;
+
+function TMe.getRunEnergy: Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_Client_run_energy);
+end;
+
+function TMe.getSkillLevels: TIntegerArray;
+begin
+  Result := SmartGetFieldIntArray(0, hook_Client_real_levels);
+end;
+
+function TMe.getSkillExperiences: TIntegerArray;
+begin
+  Result := SmartGetFieldIntArray(0, hook_Client_experiences);
+end;
+

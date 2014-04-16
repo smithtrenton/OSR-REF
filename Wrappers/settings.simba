@@ -1,0 +1,26 @@
+{
+  File:
+    settings.simba
+  Description:
+    Contains setting accessors
+}
+
+function getSettingsArray: TIntegerArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, SmartGetFieldArraySize(0, hook_client_settings, 0));
+  writeln(length(result));
+  for i := 0 to High(Result) do
+  begin
+    Result[i] := SmartGetFieldArrayInt(0, hook_client_settings, i);
+  end;
+end;
+
+function getSetting(index: Integer): Integer;
+begin
+  if (index < SmartGetFieldArraySize(0, hook_client_settings, 0)) then
+    Result := SmartGetFieldArrayInt(0, hook_client_settings, index)
+  else
+    Result := 0;
+end;

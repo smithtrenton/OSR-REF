@@ -1,0 +1,76 @@
+{
+  File:
+    player.simba
+  Description:
+    Contains actor record and accessors
+}
+
+type
+  TActor = record
+    ref: Integer;
+  end;
+
+procedure TActor.Create(r: Integer);
+begin
+  ref := r;
+end;
+
+procedure TActor.Free;
+begin
+  releaseObject(ref);
+end;
+
+function TActor.getOverheadText: String;
+begin
+  Result := SmartGetFieldString(ref, hook_Actor_ActiveText);
+end;
+
+function TActor.getRawTile: TTile;
+begin
+  Result.x := SmartGetFieldInt(ref, hook_Actor_localX);
+  Result.y := SmartGetFieldInt(ref, hook_Actor_localY);
+end;
+
+function TActor.getLocalTile: TTile;
+var
+  tile: TTile;
+begin
+  tile := getRawTile;
+  Result.create(tile.x div 128, tile.y div 128);
+end;
+
+function TActor.getTile: TTile;
+var
+  tile, base: TTile;
+begin
+  tile := getLocalTile;
+  base := getBaseTile;
+  Result.create(base.x + tile.x, base.y + tile.y);
+end;
+
+function TActor.getAnimation: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Actor_animation);
+end;
+
+function TActor.getInteracting: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Actor_interacting);
+end;
+
+function TActor.getMaxHitPoints: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Actor_maxHealth) div 30;
+  if (Result < 0) then Result := 0;
+end;
+
+function TActor.getHitPoints: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Actor_health) div 30;
+  if (Result < 0) then Result := 0;
+end;
+
+function TActor.getCombatCycle: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Actor_combatCycle);
+end;

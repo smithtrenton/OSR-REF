@@ -1,0 +1,37 @@
+program TMeTest;
+{$DEFINE SMART8}
+{$DEFINE OSRREF_DEBUG}
+{$I SRL-OSR/SRL.simba}
+{$I OSR-REF/OSR-REF.simba}
+
+var
+  me: TMe;
+
+begin
+  SetupSRL;
+  SetupOSRRef;
+  me.Create(SmartGetFieldObject(0, hook_Client_player, 'me'), 0);
+  writeln(me.getLevel);
+  writeln(me.getSkillLevels);
+  writeln(me.getSkillExperiences);
+  writeln(me.getTile);
+  me.Free;
+end.
+
+{*******************************Expected Output********************************}
+{
+SRL Compiled in 0 msec
+Attempting to pair to a smart client..
+Found 1 free client(s), attempting to pair to one...
+Set SMART[1232] as Simba's target
+Succesfully paired to a existing client, SMART[1232]
+** smartObjects[0]: me/client_player added **
+3
+[1, 1, 1, 10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+[4, 0, 64, 1174, 4, 0, 7, 70, 25, 0, 30, 40, 0, 18, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[X = 3185, Y = 3436]
+** smartObjects[0]: me/client_player freed **
+Succesfully freed SMART[1232]
+Successfully freed OSR-REF
+Successfully executed.
+}

@@ -1,0 +1,63 @@
+{
+  File:
+    npc.simba
+  Description:
+    Contains npc accessors
+}
+
+type
+  TNPC = record(TActor)
+    index: Integer;
+  end;
+
+procedure TNPC.Create(r, i: Integer);
+begin
+  ref := r;
+  index := i;
+end;
+
+function TNPC.getIndex: Integer;
+begin
+  Result := index;
+end;
+
+function TNPC.getDefinition: Integer;
+begin
+  Result := SmartGetFieldObject(ref, hook_NPC_definition);
+end;
+
+function TNPC.getName: String;
+var
+  def: Integer;
+begin
+  def := Self.getDefinition;
+  Result := SmartGetFieldString(def, hook_NPCDefinition_name);
+  releaseObject(def);
+end;
+
+function TNPC.getLevel: Integer;
+var
+  def: Integer;
+begin
+  def := Self.getDefinition;
+  Result := SmartGetFieldInt(def, hook_NPCDefinition_level);
+  releaseObject(def);
+end;
+
+function TNPC.getID: Integer;
+var
+  def: Integer;
+begin
+  def := Self.getDefinition;
+  Result := SmartGetFieldInt(def, hook_NPCDefinition_id);
+  releaseObject(def);
+end;
+
+function TNPC.getActions: TStringArray;
+var
+  def, i, hi: Integer;
+begin
+  def := Self.getDefinition;
+  Result := SmartGetFieldStringArray(def, hook_NPCDefinition_actions);
+  releaseObject(def);
+end;

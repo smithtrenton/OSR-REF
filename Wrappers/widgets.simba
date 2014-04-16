@@ -1,0 +1,46 @@
+{
+  File:
+    widgets.simba
+  Description:
+    Contains widget record and base widget accessors
+}
+
+type
+  TWidget = record
+    ref: integer;
+  end;
+
+procedure TWidget.Create(ref: Integer);
+begin
+  Self.ref := ref;
+end;
+
+procedure TWidget.Free;
+begin
+  releaseObject(Self.ref);
+end;
+
+function TWidget.getRelativeX: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Widget_getRelativeX);
+end;
+
+function TWidget.getRelativeY: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Widget_getRelativeY);
+end;
+
+function TWidget.getActions: TStringArray;
+begin
+  Result := SmartGetFieldStringArray(ref, hook_Widget_getActions);
+end;
+
+function TWidget.getText: String;
+begin
+  Result := SmartGetFieldString(ref, hook_Widget_getText);
+end;
+
+function TWidget.getID: Integer;
+begin
+  Result := SmartGetFieldInt(ref, hook_Widget_getID);
+end;

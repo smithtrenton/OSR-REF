@@ -1,0 +1,163 @@
+{
+  File:
+    tile.simba
+  Description:
+    Contains tile record and base tile functions
+}
+
+type
+  TTile = type TPoint;
+  TTileArray = array of TTile;
+
+function tileToRaw(tile: TTile): TTile;
+begin
+  Result.x := Round(tile.x * 128);
+  Result.y := Round(tile.y * 128);
+end;
+
+function rawToTile(tile: TTile): TTile;
+begin
+  Result.x := Round(tile.x div 128);
+  Result.y := Round(tile.y div 128);
+end;
+
+procedure TTile.Create(px, py: Integer);
+begin
+  x := px;
+  y := py;
+end;
+
+function TTile.getAvgTile: TTile;
+var
+  base: TTile;
+begin
+  base := getBaseTile;
+  Result.x := Round((x - base.x + 0.5) * 128);
+  Result.y := Round((y - base.y + 0.5) * 128);
+end;
+
+function TTile.toLocal: TTile;
+var
+  base: TTile;
+begin
+  base := getBaseTile;
+  Result.x := x - base.x;
+  Result.y := y - base.y;
+end;
+
+function TTile.toGlobal: TTile;
+var
+  base: TTile;
+begin
+  base := getBaseTile;
+  Result.x := x + base.x;
+  Result.y := y + base.y;
+end;
+
+function TTile.getAvgHeight: Integer;
+var
+  px, py, p, gs: Integer;
+  base: TTile;
+begin
+  Result := 0;
+  base := getBaseTile;
+  px := x - base.x;
+  py := y - base.y;
+  if ((not InRange(px, 0, 104)) or (not InRange(py, 0, 104))) then
+    Exit;
+  p := getCurrentPlane;
+  gs := SmartGetFieldArray3DByte(0, hook_client_groundSettings, 1, px, py);
+  if ((p < 3) and ((gs and 2) <> 0)) then
+    inc(p);
+
+  Result := SmartGetFieldArray3DInt(0, hook_client_groundHeights, p, px, py)
+    + SmartGetFieldArray3DInt(0, hook_client_groundHeights, p, px + 1, py)
+    + SmartGetFieldArray3DInt(0, hook_client_groundHeights, p, px, py + 1)
+    + SmartGetFieldArray3DInt(0, hook_client_groundHeights, p, px + 1, py + 1);
+  Result := - Result div 4;
+end;
+
+function TTile.getHeight: Integer;
+begin
+  Result := getTileHeight(Self);
+end;
+
+function TTile.getRawBounds: TPointArray;
+var
+  base: TTile;
+begin
+  base := getBaseTile;
+  SetLength(Result, 4);
+  Result[0] := Point(Round((x - base.x) * 128), Round((y - base.y) * 128));
+  Result[1] := Point(Round((x - base.x + 1) * 128), Round((y - base.y) * 128));
+  Result[2] := Point(Round((x - base.x + 1) * 128), Round((y - base.y + 1) * 128));
+  Result[3] := Point(Round((x - base.x) * 128), Round((y - base.y + 1) * 128));
+end;
+
+function TTile.getBounds: TPointArray;
+var
+  rb: TPointArray;
+  i: Integer;
+begin
+  rb := getRawBounds;
+  SetLength(Result, 4);
+  for i := 0 to 3 do
+  begin
+    Result[i] := worldToScreen(rb[i].x, rb[i].y, rawToTile(rb[i]).toGlobal.getHeight);
+  end;
+end;
+
+function TTile.getFlatBounds: TPointArray;
+var
+  rb: TPointArray;
+  i, avg: Integer;
+begin
+  rb := getRawBounds;
+  avg := getAvgHeight;
+  SetLength(Result, 4);
+  for i := 0 to 3 do
+  begin
+    Result[i] := worldToScreen(rb[i].x, rb[i].y, avg);
+  end;
+end;
+
+function TTile.toMinimap: TPoint;
+var
+  rads, xx, yy: extended;
+  tile: TTile;
+begin
+  rads := getMinimapAngleRad;
+  tile := getCurrentTile;
+  xx := (x - tile.x) * 4 - 2;
+  yy := (tile.y - y) * 4 - 2;
+  Result.x := Round(xx*Cos(rads) + yy*Sin(rads)) + 643;
+  Result.y := Round(yy*Cos(rads) - xx*Sin(rads)) + 83;
+end;
+
+function TTile.toScreen(xOff, yOff, height: Integer): TPoint;
+var
+  tile: TTile;
+begin
+  tile := getAvgTile;
+  Result := worldToScreen(tile.x + xOff, tile.y + yOff, height);
+end;
+
+function TTile.toScreen(xOff, yOff: Integer): TPoint; overload;
+begin
+  Result := toScreen(xOff, yOff, getAvgHeight);
+end;
+
+function TTile.toScreen(height: Integer): TPoint; overload;
+begin
+  Result := toScreen(0, 0, height);
+end;
+
+function TTile.toScreen(): TPoint; overload;
+begin
+  Result := toScreen(0, 0, getAvgHeight);
+end;
+
+function TTile.distanceTo(tile: TTile): Integer;
+begin
+  Result := Distance(tile.x, tile.y, x, y);
+end;

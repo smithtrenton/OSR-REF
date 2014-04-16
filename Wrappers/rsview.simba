@@ -1,0 +1,156 @@
+{
+  File:
+    rsview.simba
+  Description:
+    Contains view-related procedures and functions
+}
+
+type
+  TCamera = record
+    x, y, z, yaw, pitch: Integer;
+  end;
+  TCurves = record
+    sinArr, cosArr: TIntegerArray;
+  end;
+
+var
+  CURVES: TCurves;
+
+function TCamera.getX : Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_cameraX);
+end;
+
+function TCamera.getY : Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_cameraY);
+end;
+
+function TCamera.getZ : Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_cameraZ);
+end;
+
+function TCamera.getPitch : Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_cameraPitch);
+end;
+
+function TCamera.getYaw : Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_cameraYaw);
+end;
+
+procedure TCurves.setup;
+var
+  i: Integer;
+begin
+  SetLength(sinArr, 2048);
+  SetLength(CosArr, 2048);
+  for i := 0 to 2047 do
+  begin
+    sinArr[i] := Round(65536.0 * Sin(i * 0.0030679614999999999));
+    cosArr[i] := Round(65536.0 * Cos(i * 0.0030679614999999999));
+  end;
+end;
+
+function getMinimapAngleDeg: Extended;
+var
+  camera: TCamera;
+begin
+  Result := camera.getPitch / 2048.0 * 360;
+end;
+
+function getMinimapAngleRad: Extended;
+begin
+  Result := Radians(getMinimapAngleDeg);
+end;
+
+function getCurrentPlane: Integer;
+begin
+  Result := SmartGetFieldInt(0, hook_client_plane);
+end;
+
+function getCurrentTile: TPoint;
+var
+  ref: Integer;
+begin
+  ref := SmartGetFieldObject(0, hook_client_player, 'tile');
+  Result.x := SmartGetFieldInt(0, hook_client_baseX) +
+    SmartGetFieldInt(ref, hook_Actor_localX) div 128;
+  Result.y := SmartGetFieldInt(0, hook_client_baseY) +
+    SmartGetFieldInt(ref, hook_Actor_localY) div 128;
+  releaseObject(ref);
+end;
+
+function getBaseTile: TPoint;
+begin
+  Result.x := SmartGetFieldInt(0, hook_client_baseX);
+  Result.y := SmartGetFieldInt(0, hook_client_baseY);
+end;
+
+//Dgby714 - arithmetic shift right
+function ashr(x: Integer; d: Byte): Integer;
+var
+  Bit: Integer;
+  I: Integer;
+begin
+  Bit := (1 shl 31) and x;
+  Result := x;
+
+  for I := 1 to d do
+    Result := (Result shr 1) or Bit;
+end;
+
+function getTileHeight(tile: TPoint): Integer;
+var
+  px, py, p, gs: Integer;
+  base: TPoint;
+begin
+  Result := 0;
+  base := getBaseTile;
+  px := tile.x - base.x;
+  py := tile.y - base.y;
+  if ((not InRange(px, 0, 104)) or (not InRange(py, 0, 104))) then
+    Exit;
+  p := getCurrentPlane;
+  gs := SmartGetFieldArray3DByte(0, hook_client_groundSettings, 1, px, py);
+  if ((p < 3) and ((gs and 2) <> 0)) then
+    inc(p);
+
+  Result := -SmartGetFieldArray3DInt(0, hook_client_groundHeights, p, px, py);
+end;
+
+function worldToScreen(x, y, z: Extended): TPoint;
+var
+  cam: TCamera;
+  cX, cY, cosX, cosY, sinX, sinY, t: Extended;
+begin
+  Result := Point(-1, -1);
+  if (not InRange(Round(x), 128, 13056)) or (not InRange(Round(y), 128, 13056)) then
+    Exit;
+  z := -z;
+  x := x - cam.getX;
+  y := y - cam.getY;
+  z := z - cam.getZ;
+  cX := cam.getYaw;
+  cY := cam.getPitch;
+  cosX := CURVES.cosArr[Floor(cX)];
+  cosY := CURVES.cosArr[Floor(cY)];
+  sinX := CURVES.sinArr[Floor(cX)];
+  sinY := CURVES.sinArr[Floor(cY)];
+  t := ashr(Round((cosX * x) + (y * sinX)), 16);
+  y := ashr(Round((y * cosX) - (x * sinX)), 16);
+  x := Round(t);
+  t := ashr(Round((z * cosY) - (y * sinY)), 16);
+  y := ashr(Round((z * sinY) - ((-cosY) * y)), 16);
+  z := Round(t);
+  if (y < 50) then
+    Exit;
+  Result.x := Round((Floor(x) shl 9) / y) + 259;
+  Result.y := Round((Floor(z) shl 9) / y) + 170;
+end;
+
+
+
+

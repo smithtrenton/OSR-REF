@@ -14,6 +14,13 @@ const
 //Wrapper Includes
 {$I OSR-REF/Wrappers/hooks.simba}
 {$I OSR-REF/Wrappers/smartref.simba}
+{$I OSR-REF/Wrappers/widgets.simba}
+{$I OSR-REF/Wrappers/settings.simba}
+{$I OSR-REF/Wrappers/rsview.simba}
+{$I OSR-REF/Wrappers/tile.simba}
+{$I OSR-REF/Wrappers/actor.simba}
+{$I OSR-REF/Wrappers/npc.simba}
+{$I OSR-REF/Wrappers/player.simba}
 
 //API Includes
 
@@ -34,5 +41,6 @@ procedure SetupOSRRef;
 begin
   soIndex := 0;
   SetLength(smartObjects, soIndex);
+  CURVES.setup;
   AddOnTerminate('FreeOSRRef');
 end;

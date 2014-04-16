@@ -117,10 +117,15 @@ const
   hook_WorldObject_orientation: THook = ['z', 'WorldObject_orientation', 1308633513];
   hook_WorldObject_Flags: THook = ['g', 'WorldObject_Flags', -1132466415];
   hook_Widget: THook = ['fl', 'Widget', 1];
-  hook_Widget_getRelativeX: THook = ['b', 'Widget_getRelativeX', -2099276977];
-  hook_Widget_getRelativeY: THook = ['x', 'Widget_getRelativeY', 723086927];
+  hook_Widget_getParent: THook = ['bc', 'Widget_getParent', 1];
+  hook_Widget_getChildren: THook = ['da', 'Widget_getChildren', 1];
+  hook_Widget_getX: THook = ['b', 'Widget_getX', -2099276977];
+  hook_Widget_getY: THook = ['x', 'Widget_getY', 723086927];
+  hook_Widget_getRelativeX: THook = ['f', 'Widget_getRelativeX', 1417707275];
+  hook_Widget_getRelativeY: THook = ['s', 'Widget_getRelativeY', -1785434187];
   hook_Widget_getActions: THook = ['bb', 'Widget_getActions', 1];
   hook_Widget_getID: THook = ['p', 'Widget_getID', 692329857];
+  hook_Widget_getParentID: THook = ['l', 'Widget_getParentID', -1609096221];
   hook_Widget_getItems: THook = ['dj', 'Widget_getItems', 1];
   hook_Widget_getStackSizes: THook = ['dw', 'Widget_getStackSizes', 1];
   hook_Widget_getText: THook = ['bk', 'Widget_getText', 1];
